@@ -4,8 +4,8 @@
   "description": "",
   "main": "./build/index.js",
   "scripts": {
-    "build": "npx tsc build",
-    "start": "npx tsc && node build/index.js",
+    "build": "npm i && npx tsc",
+    "start": "node build/index.js",
     "dev": "npx nodemon -e ts --exec \"npm run start\""
   },
   "author": "Wojciech Cyrwus",
