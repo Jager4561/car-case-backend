@@ -1,12 +1,13 @@
 import { CCAccount, CCSession, CCSessionExtended } from "./auth/auth.model";
+import { CCModel } from "./models/models.model";
 import { CCActivation } from "./register/register.model";
 
 export type DirectusCollections = {
   cc_users: CCAccount;
   cc_sessions: CCSession & CCSessionExtended;
-  cc_activations: CCActivation
+  cc_activations: CCActivation;
+  cc_models: CCModel;
 }
-
 
 export function getCurrentTime(): string {
   const date = new Date();
