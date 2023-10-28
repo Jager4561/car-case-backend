@@ -47,30 +47,29 @@ export async function getPostsController(req: Request, res: Response) {
         }
       }
 		];
-		if (search) {
-			filterRules.push({
-				title: {
-					_contains: search,
-				},
-			});
-		}
 		if (brand) {
 			filterRules.push({
-				brand: {
-					_eq: +brand,
-				},
+        model_generation: {
+          model: {
+            brand: {
+              _eq: +brand,
+            },
+          }
+        }
 			});
 		}
 		if (model) {
 			filterRules.push({
-				model: {
-					_eq: +model,
+				model_generation: {
+          model: {
+            _eq: +model,
+          }
 				},
 			});
 		}
 		if (generation) {
 			filterRules.push({
-				generation: {
+				model_generation: {
 					_eq: +generation,
 				},
 			});
@@ -151,7 +150,8 @@ export async function getPostsController(req: Request, res: Response) {
 				_and: filterRules,
 			},
 			sort: sortMethod as any,
-			limit: -1
+			limit: -1,
+      search: search ? search : undefined,
 		});
 		if (posts.data == null || posts.data.length === 0) {
 			console.log(
@@ -173,7 +173,7 @@ export async function getPostsController(req: Request, res: Response) {
       sliceStart = wantedOffset * wantedPage;
       sliceEnd = wantedOffset * (wantedPage + 1) - 1;
     }
-		const parsedPosts = posts.data.slice(sliceStart, sliceEnd).map((post) => {
+		let parsedPosts = posts.data.slice(sliceStart, sliceEnd).map((post) => {
 			const postRatings = countLikesAndDislikes(post.ratings, session ? session.user.id : null);
 			const comments = post.comments
 				.filter((comment: any) => comment.parent == null)
@@ -257,6 +257,20 @@ export async function getPostsController(req: Request, res: Response) {
 				author: post.author,
 			};
 		});
+    switch(sort) {
+      case 'mostPopular': {
+        parsedPosts = parsedPosts.sort((a: any, b: any) => {
+          return b.likes - a.likes;
+        });
+        break;
+      }
+      case 'leastPopular': {
+        parsedPosts = parsedPosts.sort((a: any, b: any) => {
+          return a.likes - b.likes;
+        });
+        break;
+      }
+    }
 		return res.status(200).send({
       posts: parsedPosts,
       meta: {
