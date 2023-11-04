@@ -6,9 +6,11 @@ import { pingController } from './ping.controller';
 import { resetPasswordController } from './reset-password.controller';
 import { resendResetEmailController } from './resend-reset-email.controller';
 import { isAuthenticated } from '../middlewares/isAuthenticated';
+import { refreshController } from './refresh.controller';
 
 const router = Router();
 router.post('/login', loginController);
+router.post('/refresh', refreshController);
 router.get('/ping', isAuthenticated, pingController);
 router.post('/logout', logoutController);
 router.post('/reset-password', resetPasswordController);

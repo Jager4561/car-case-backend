@@ -5,7 +5,7 @@ export const countLikesAndDislikes = (ratings: any, account: string | null) => {
   let disliked = false;
 
   ratings.forEach((rating: any) => {
-    if (rating) {
+    if (rating.rating) {
       likesCount++;
     } else {
       dislikesCount++;
@@ -15,7 +15,7 @@ export const countLikesAndDislikes = (ratings: any, account: string | null) => {
       account &&
       rating.account === account
     ) {
-      if (rating.rating === 'like') {
+      if (rating.rating) {
         liked = true;
       } else {
         disliked = true;

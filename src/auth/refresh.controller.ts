@@ -22,6 +22,11 @@ export async function refreshController(req: Request, res: Response) {
   try {
     const wantedSessions = await directus.items('cc_sessions').readByQuery({
       fields: ['*', 'account.*'],
+      filter: {
+        refresh_token: {
+          _eq: payload.refresh_token,
+        }
+      }
     });
     if(wantedSessions.data != null && wantedSessions.data.length === 0) {
       console.log(`[${getCurrentTime()}] ${req.method} ${req.url} 401 Unauthorized`);

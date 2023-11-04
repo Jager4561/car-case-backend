@@ -143,6 +143,7 @@ export async function getPostsController(req: Request, res: Response) {
         'comments.author.id',
         'comments.author.avatar',
         'comments.author.name',
+        'comments.ratings.*',
 				'ratings.*',
 				'ratings.account',
 			],
@@ -165,7 +166,6 @@ export async function getPostsController(req: Request, res: Response) {
         }
       });
 		}
-		console.log(`[${getCurrentTime()}] ${req.method} ${req.url} 200 OK`);
 		const session = res.locals.session;
     let sliceStart = wantedOffset * wantedPage;
     let sliceEnd = wantedOffset * (wantedPage + 1);
@@ -174,16 +174,16 @@ export async function getPostsController(req: Request, res: Response) {
       sliceEnd = wantedOffset * (wantedPage + 1) - 1;
     }
 		let parsedPosts = posts.data.slice(sliceStart, sliceEnd).map((post) => {
-			const postRatings = countLikesAndDislikes(post.ratings, session ? session.user.id : null);
+			const postRatings = countLikesAndDislikes(post.ratings, session ? session.accountId : null);
 			const comments = post.comments
 				.filter((comment: any) => comment.parent == null)
 				.map((comment: any) => {
-					const ratings = countLikesAndDislikes(comment.ratings, session ? session.user.id : null);
+					const ratings = countLikesAndDislikes(comment.ratings, session ? session.accountId : null);
 
           const childrenComments = post.comments
             .filter((childComment: any) => childComment.parent === comment.id)
             .map((childComment: any) => {
-              const ratings = countLikesAndDislikes(childComment.ratings, session ? session.user.id : null);
+              const ratings = countLikesAndDislikes(childComment.ratings, session ? session.accoundId : null);
               return {
                 id: childComment.id,
                 date_created: childComment.date_created,
@@ -195,7 +195,7 @@ export async function getPostsController(req: Request, res: Response) {
                 isLiked: ratings.liked,
                 isDisliked: ratings.disliked,
                 isUserComment:
-                  session && childComment.author === session.user.id,
+                  session && childComment.author.id === session.accoundId,
               };
             }).sort((a: any, b: any) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());;
 
@@ -210,7 +210,7 @@ export async function getPostsController(req: Request, res: Response) {
 						isLiked: ratings.liked,
 						isDisliked: ratings.disliked,
 						isUserComment:
-							session && comment.author === session.user.id,
+							session && comment.author.id === session.accoundId,
             children: childrenComments
 					};
 				}).sort((a: any, b: any) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());
@@ -247,7 +247,6 @@ export async function getPostsController(req: Request, res: Response) {
 				date_modified: post.date_modified,
 				title: post.title,
 				abstract: post.abstract,
-				content: post.content,
 				likes: postRatings.likesCount,
 				dislikes: postRatings.dislikesCount,
 				isLiked: postRatings.liked,
@@ -271,6 +270,9 @@ export async function getPostsController(req: Request, res: Response) {
         break;
       }
     }
+    console.log(
+      `[${getCurrentTime()}] ${req.method} ${req.url} 200 OK`
+    );
 		return res.status(200).send({
       posts: parsedPosts,
       meta: {

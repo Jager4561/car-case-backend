@@ -1,5 +1,6 @@
 import { Directus } from '@directus/sdk';
 import { NextFunction, Request, Response } from 'express';
+import { getDirectus } from '../helpers';
 
 export async function sessionMiddleware(
 	req: Request,
@@ -20,14 +21,7 @@ export async function sessionMiddleware(
 	}
 
 	try {
-		const directus = new Directus(
-			process.env.DIRECTUS_URL || 'http://localhost:8055',
-			{
-				auth: {
-					staticToken: process.env.DIRECTUS_TOKEN || '',
-				},
-			}
-		);
+		const directus = getDirectus();
     const wantedSessions = await directus.items('cc_sessions').readByQuery({
       fields: ['*'],
       filter: {
@@ -46,10 +40,10 @@ export async function sessionMiddleware(
       return next();
     }
     res.locals.session = {
-      id: wantedSession.id,
-      user: wantedSession.user
+      sessionId: wantedSession.id,
+      accountId: wantedSession.account
     };
-    return next;
+    return next();
 	} catch (error) {
 		res.locals.session = null;
 		return next();

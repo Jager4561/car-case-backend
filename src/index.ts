@@ -4,6 +4,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { IAuth, Directus } from '@directus/sdk';
 import AuthRoutes from './auth/auth.routes';
+import AccountRoutes from './account/account.routes';
 import RegisterRoutes from './register/register.routes';
 import ModelsRoutes from './models/models.routes';
 import PostsRoutes from './posts/posts.routes';
@@ -25,6 +26,7 @@ function main() {
   app.use(bodyParser.json());
   
   app.use('/auth', AuthRoutes);
+  app.use('/account', AccountRoutes);
   app.use('/register', RegisterRoutes);
   app.use('/models', ModelsRoutes);
   app.use('/posts', PostsRoutes);
