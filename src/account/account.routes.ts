@@ -9,6 +9,7 @@ import { updateAvatarController } from './updateAvatar.controller';
 import { updateAccountController } from './updateAccount.controller';
 import { changePasswordController } from './changePassword.controller';
 import { deleteAvatarController } from './deleteAvatar.controller';
+import { deleteAccountController } from './deleteAccount.controller';
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.post('/avatar', upload.single('avatar'), isAuthenticated, sessionMiddlewa
 router.delete('/avatar', isAuthenticated, sessionMiddleware, deleteAvatarController);
 router.patch('/', isAuthenticated, sessionMiddleware, updateAccountController);
 router.post('/password', isAuthenticated, sessionMiddleware, changePasswordController);
+router.delete('/', isAuthenticated, sessionMiddleware, deleteAccountController);
 
 export default router;

@@ -26,11 +26,6 @@ export async function getPostsController(req: Request, res: Response) {
 			}
 		);
 		const filterRules: any[] = [
-			{
-				status: {
-					_eq: 'published',
-				},
-			},
       {
         model_generation: {
           _nnull: true,
@@ -119,7 +114,7 @@ export async function getPostsController(req: Request, res: Response) {
 				break;
 			}
 		}
-		const posts = await directus.items('cc_posts').readByQuery({
+		let posts = await directus.items('cc_posts').readByQuery({
 			fields: [
 				'*',
 				'brand.*',
@@ -167,13 +162,26 @@ export async function getPostsController(req: Request, res: Response) {
       });
 		}
 		const session = res.locals.session;
+
+    if(session && session.expired) {
+			console.log(
+				`[${getCurrentTime()}] ${req.method} ${
+					req.url
+				} 401 Unauthorized`
+			);
+			return res.status(401).json({
+				type: 'unauthorized',
+				message: 'Unauthorized',
+			});
+		}
+    posts.data = posts.data.filter((post: any) => post.status === 'published' || (session && post.author.id === session.accountId));
     let sliceStart = wantedOffset * wantedPage;
     let sliceEnd = wantedOffset * (wantedPage + 1);
     if(wantedOffset > 1) {
       sliceStart = wantedOffset * wantedPage;
       sliceEnd = wantedOffset * (wantedPage + 1) - 1;
     }
-		let parsedPosts = posts.data.slice(sliceStart, sliceEnd).map((post) => {
+		let parsedPosts = posts.data.slice(sliceStart, sliceEnd).map((post: any) => {
 			const postRatings = countLikesAndDislikes(post.ratings, session ? session.accountId : null);
 			const comments = post.comments
 				.filter((comment: any) => comment.parent == null)
@@ -183,11 +191,12 @@ export async function getPostsController(req: Request, res: Response) {
           const childrenComments = post.comments
             .filter((childComment: any) => childComment.parent === comment.id)
             .map((childComment: any) => {
-              const ratings = countLikesAndDislikes(childComment.ratings, session ? session.accoundId : null);
+              const ratings = countLikesAndDislikes(childComment.ratings, session ? session.accountId : null);
               return {
                 id: childComment.id,
+                status: childComment.status,
                 date_created: childComment.date_created,
-                date_modified: childComment.date_modified,
+                date_updated: childComment.date_updated,
                 author: childComment.author,
                 content: childComment.content,
                 likes: ratings.likesCount,
@@ -195,14 +204,15 @@ export async function getPostsController(req: Request, res: Response) {
                 isLiked: ratings.liked,
                 isDisliked: ratings.disliked,
                 isUserComment:
-                  session && childComment.author.id === session.accoundId,
+                  session != null && childComment.author && childComment.author.id === session.accountId,
               };
-            }).sort((a: any, b: any) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());;
+            }).sort((a: any, b: any) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
 
 					return {
 						id: comment.id,
+            status: comment.status,
 						date_created: comment.date_created,
-						date_modified: comment.date_modified,
+						date_updated: comment.date_updated,
             author: comment.author,
 						content: comment.content,
 						likes: ratings.likesCount,
@@ -210,10 +220,10 @@ export async function getPostsController(req: Request, res: Response) {
 						isLiked: ratings.liked,
 						isDisliked: ratings.disliked,
 						isUserComment:
-							session && comment.author.id === session.accoundId,
+							session != null && comment.author && comment.author.id === session.accountId,
             children: childrenComments
 					};
-				}).sort((a: any, b: any) => new Date(a.date_created).getTime() - new Date(b.date_created).getTime());
+				}).sort((a: any, b: any) => new Date(b.date_created).getTime() - new Date(a.date_created).getTime());
 
       const model = {
         id: post.model_generation.model.id,
@@ -243,6 +253,7 @@ export async function getPostsController(req: Request, res: Response) {
 
 			return {
 				id: post.id,
+        status: post.status,
 				date_created: post.date_created,
 				date_modified: post.date_modified,
 				title: post.title,

@@ -8,6 +8,7 @@ import AccountRoutes from './account/account.routes';
 import RegisterRoutes from './register/register.routes';
 import ModelsRoutes from './models/models.routes';
 import PostsRoutes from './posts/posts.routes';
+import CommentsRoutes from './comments/comments.routes';
 import { DirectusCollections, getCurrentTime } from './helpers';
 
 const app = express();
@@ -30,6 +31,7 @@ function main() {
   app.use('/register', RegisterRoutes);
   app.use('/models', ModelsRoutes);
   app.use('/posts', PostsRoutes);
+  app.use('/comments', CommentsRoutes);
   app.use(function (req, res) {
     console.log(`[${getCurrentTime()}] ${req.method} ${req.url} 404 Not Found`);
     return res.status(404).send({

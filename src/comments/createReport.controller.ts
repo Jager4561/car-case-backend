@@ -1,30 +1,34 @@
 import { Request, Response } from 'express';
 import { getCurrentTime, getDirectus } from '../helpers';
 
-export async function deleteCommentController(req: Request, res: Response) {
-  const commentId = req.params.id;
+export async function createReportController(req: Request, res: Response) {
+  const payload = req.body;
 
-  if(!commentId) {
+  if(!payload.comment) {
     console.log(
       `[${getCurrentTime()}] ${req.method} ${req.url} 400 Bad Request`
     );
     return res.status(400).send({
       type: 'bad_request',
-      message: 'Comment ID is missing'
+      message: 'Comment is missing'
+    });
+  }
+
+  if(!payload.content) {
+    console.log(
+      `[${getCurrentTime()}] ${req.method} ${req.url} 400 Bad Request`
+    );
+    return res.status(400).send({
+      type: 'bad_request',
+      message: 'Content is missing'
     });
   }
 
   const session = res.locals.session;
   try {
     const directus = getDirectus();
-    const wantedComment = await directus.items('cc_comments').readOne(commentId, {
-      fields: ['author']
-    });
-    const childrenComments = await directus.items('cc_comments').readByQuery({
-      filter: {
-        parent: commentId
-      },
-      fields: ['id']
+    const wantedComment = await directus.items('cc_comments').readOne(payload.comment, {
+      fields: ['status']
     });
     if(!wantedComment) {
       console.log(
@@ -32,32 +36,29 @@ export async function deleteCommentController(req: Request, res: Response) {
       );
       return res.status(404).send({
         type: 'not_found',
-        message: 'Comment not found'
+        message: 'Post not found'
       });
     }
-    if(wantedComment.author !== session.accountId) {
+    if(wantedComment.status !== 'published') {
       console.log(
         `[${getCurrentTime()}] ${req.method} ${req.url} 403 Forbidden`
       );
       return res.status(403).send({
         type: 'forbidden',
-        message: 'You are not allowed to delete this comment'
+        message: 'You are not allowed to report this comment'
       });
     }
-    if(childrenComments.data && childrenComments.data.length > 0) {
-      await directus.items('cc_comments').updateOne(commentId, {
-        status: 'deleted',
-        author: null
-      });
-    } else {
-      await directus.items('cc_comments').deleteOne(commentId);
-    }
+    await directus.items('cc_comments_reports').createOne({
+      comment: payload.comment,
+      account: session.accountId,
+      content: payload.content,
+    });
     console.log(
       `[${getCurrentTime()}] ${req.method} ${req.url} 200 OK`
     );
     return res.status(200).send({
       type: 'ok',
-      message: 'Comment deleted'
+      message: 'Report created'
     });
   } catch (error) {
     console.log(

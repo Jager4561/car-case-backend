@@ -1,63 +1,62 @@
 import { Request, Response } from 'express';
 import { getCurrentTime, getDirectus } from '../helpers';
 
-export async function deleteCommentController(req: Request, res: Response) {
-  const commentId = req.params.id;
+export async function deletePostController(req: Request, res: Response) {
+  const id = req.params.id;
 
-  if(!commentId) {
+  if(!id) {
     console.log(
       `[${getCurrentTime()}] ${req.method} ${req.url} 400 Bad Request`
     );
     return res.status(400).send({
       type: 'bad_request',
-      message: 'Comment ID is missing'
+      message: 'Missing id parameter',
     });
   }
 
-  const session = res.locals.session;
   try {
     const directus = getDirectus();
-    const wantedComment = await directus.items('cc_comments').readOne(commentId, {
-      fields: ['author']
+    const session = res.locals.session;
+    const wantedPost = await directus.items('cc_posts').readOne(id, {
+      fields: ['id', 'author', 'status', 'content']
     });
-    const childrenComments = await directus.items('cc_comments').readByQuery({
-      filter: {
-        parent: commentId
-      },
-      fields: ['id']
-    });
-    if(!wantedComment) {
+    if(!wantedPost) {
       console.log(
         `[${getCurrentTime()}] ${req.method} ${req.url} 404 Not Found`
       );
       return res.status(404).send({
         type: 'not_found',
-        message: 'Comment not found'
+        message: 'Post not found'
       });
     }
-    if(wantedComment.author !== session.accountId) {
+    if(wantedPost.author !== session.accountId) {
       console.log(
         `[${getCurrentTime()}] ${req.method} ${req.url} 403 Forbidden`
       );
       return res.status(403).send({
         type: 'forbidden',
-        message: 'You are not allowed to delete this comment'
+        message: 'You are not allowed to delete this post'
       });
     }
-    if(childrenComments.data && childrenComments.data.length > 0) {
-      await directus.items('cc_comments').updateOne(commentId, {
-        status: 'deleted',
-        author: null
-      });
-    } else {
-      await directus.items('cc_comments').deleteOne(commentId);
+    const postImages: string[] = [];
+    wantedPost.content.forEach((section: {
+      type: string,
+      content: string
+    }) => {
+      if(section.type === 'image') {
+        postImages.push(section.content);
+      }
+    });
+    await directus.items('cc_posts').deleteOne(id);
+    if(postImages.length > 0) {
+      await directus.files.deleteMany(postImages);
     }
     console.log(
       `[${getCurrentTime()}] ${req.method} ${req.url} 200 OK`
     );
     return res.status(200).send({
       type: 'ok',
-      message: 'Comment deleted'
+      message: 'Post deleted'
     });
   } catch (error) {
     console.log(

@@ -36,12 +36,17 @@ export async function sessionMiddleware(
     }
     const wantedSession = wantedSessions.data![0];
     if(wantedSession.expires < new Date().getTime()) {
-      res.locals.session = null;
+      res.locals.session = {
+        sessionId: wantedSession.id,
+        accountId: wantedSession.account,
+        expired: true
+      };
       return next();
     }
     res.locals.session = {
       sessionId: wantedSession.id,
-      accountId: wantedSession.account
+      accountId: wantedSession.account,
+      expired: false
     };
     return next();
 	} catch (error) {
